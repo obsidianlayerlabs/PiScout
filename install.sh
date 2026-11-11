@@ -73,10 +73,19 @@ apt-get install -y \
     python3-pip \
     python3-pil \
     python3-lgpio \
-    python3-rpi.gpio \
+    python3-rpi-lgpio \
     python3-spidev \
     fonts-dejavu-core \
     snmp
+
+# The 4 HAT buttons need rpi-lgpio: the legacy RPi.GPIO package's edge
+# detection fails on current Raspberry Pi OS kernels ("Failed to add edge
+# detection"). rpi-lgpio is a drop-in replacement with the same import name.
+# Installing it removes the conflicting legacy apt package automatically.
+# Also remove any pip-installed copy -- pip installs to /usr/local/lib, which
+# Python searches before the apt location, so a leftover copy would silently
+# shadow the fix.
+pip3 uninstall -y RPi.GPIO --break-system-packages >/dev/null 2>&1 || true
 
 info "System packages installed."
 

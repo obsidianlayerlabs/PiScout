@@ -98,23 +98,35 @@ _OID_LLDP_LOC_PORT_DESC = "1.0.8802.1.1.2.1.3.7.1.4"
 
 def _get_communities() -> list[str]:
     """Build the ordered list of SNMP community strings to try."""
-    built_in = list(config.SNMP_COMMUNITY_STRINGS)
-    user = str(config.SNMP_USER_COMMUNITY).strip()
+    built_in = list(getattr(config, "SNMP_COMMUNITY_STRINGS", [
+        "public", "cisco", "community", "private",
+        "manager", "snmp", "monitor", "readonly",
+    ]))
+    user = str(getattr(config, "SNMP_USER_COMMUNITY", "")).strip()
     if user and user not in built_in:
         return [user] + built_in
     return built_in
 
 
 def _snmp_timeout() -> int:
-    return max(1, int(config.SNMP_TIMEOUT))
+    try:
+        return max(1, int(getattr(config, "SNMP_TIMEOUT", 1)))
+    except (TypeError, ValueError):
+        return 1
 
 
 def _dhcp_wait() -> float:
-    return max(1.0, float(config.SNMP_DHCP_WAIT))
+    try:
+        return max(1.0, float(getattr(config, "SNMP_DHCP_WAIT", 8.0)))
+    except (TypeError, ValueError):
+        return 8.0
 
 
 def _arp_wait() -> float:
-    return max(1.0, float(config.SNMP_ARP_WAIT))
+    try:
+        return max(1.0, float(getattr(config, "SNMP_ARP_WAIT", 3.0)))
+    except (TypeError, ValueError):
+        return 3.0
 
 
 # ============================================================
@@ -537,11 +549,13 @@ def _find_port_lldp_mib(
         port_desc  = _snmp_get(host, community, f"{_OID_LLDP_LOC_PORT_DESC}.{local_port_num}")
         port_name  = str(port_desc or f"port{local_port_num}").strip()
 
-        # Try VLAN — assume localPortNum equals ifIndex on most switches.
-        if_index   = local_port_num
-        cisco_vlan = _snmp_get(host, community, f"{_OID_CISCO_VM_VLAN}.{if_index}")
-        dot1q_vlan = _snmp_get(host, community, f"{_OID_DOT1Q_PVID}.{if_index}")
-        vlan       = str(cisco_vlan or dot1q_vlan or "").strip()
+        # No VLAN lookup here. lldpLocPortNum is not ifIndex and not the
+        # bridge port on many switches, so reading vmVlan/dot1qPvid at
+        # this index returns a different port's VLAN with no error -- and
+        # a confidently wrong VLAN is worse than a blank one. When this
+        # path wins, main.py's VLAN enrichment fills the VLAN in correctly
+        # via a MAC-keyed bridge-port lookup (see vlan_enrich.py).
+        vlan       = ""
 
         return {
             "port_name":  port_name,
@@ -636,7 +650,13 @@ def _find_port_bridge_mib(
     voice_vlan  = _snmp_get(host, community, f"{_OID_CISCO_VOICE_VLAN}.{if_index}")
 
     if not vlan:
-        dot1q_vlan = _snmp_get(host, community, f"{_OID_DOT1Q_PVID}.{if_index}")
+        # dot1qPvid is indexed by dot1dBasePort (bridge port), NOT ifIndex --
+        # dot1qPortVlanTable augments dot1dBasePortEntry in the Q-BRIDGE-MIB.
+        # Indexing it by ifIndex only works on switches where the two
+        # numbering schemes happen to coincide; elsewhere it silently
+        # returns a different port's VLAN. cisco vmVlan IS ifIndex-indexed,
+        # so that lookup stays as-is.
+        dot1q_vlan = _snmp_get(host, community, f"{_OID_DOT1Q_PVID}.{bridge_port_int}")
         vlan = str(cisco_vlan or dot1q_vlan or "").strip()
 
     return {

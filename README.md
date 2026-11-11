@@ -4,6 +4,19 @@ A pocket-sized network diagnostic tool that displays switch port information usi
 
 Inspired by the functionality of commercial network port identification tools used by field technicians.
 
+> ### About this fork
+>
+> This fork adapts PiScout for the **Raspberry Pi 3B+** and the **Waveshare 2.7inch e-Paper HAT V2**, and puts the HAT's four buttons to work as one-press network checks. The original project is [MKWB/PiScout](https://github.com/MKWB/PiScout).
+>
+> - **Display:** driver for the 2.7inch V2 panel, with on-screen labels for the four buttons. The 2.13-inch display used upstream is not supported by this fork.
+> - **Buttons:** gateway ping, internet ping, DNS check, and link quality (loss and latency).
+> - **IP line:** shows this device's own DHCP address rather than the switch's management address.
+> - **VLAN:** falls back through several sources when the switch doesn't advertise it, and labels where the value came from. Shows "not advertised" rather than guessing.
+> - **SNMP fix:** reads each port's VLAN at the correct table index; upstream could return a different port's VLAN on some switches.
+> - **Reliability:** the screen returns to the main display if a result screen sticks, and `install.sh` installs the GPIO library the buttons need.
+>
+> See [CHANGES.md](CHANGES.md) for the detail, and [docs/SETUP.md](docs/SETUP.md) for the full build guide, including case assembly.
+
 ---
 
 ## Overview
@@ -44,7 +57,6 @@ IP: 10.10.1.2
 PORT: Gi1/0/24
 VLAN: 120
 VOICE: 130
-LINK: 1G FD
 ```
 
 ---
@@ -104,7 +116,6 @@ The following information is shown on the e-Paper display:
 - **PORT** — Port the device is connected to
 - **VLAN** — Access VLAN
 - **VOICE** — Voice VLAN (if configured)
-- **LINK** — Link Speed
 
 A small protocol indicator in the top-right corner shows which discovery method produced the result: **SNMP**, **LLDP**, or **CDP**.
 
@@ -153,7 +164,7 @@ sudo apt install git -y
 ### Step 4. Clone the repository
 
 ```bash
-sudo git clone https://github.com/MKWB/PiScout.git /opt/piscout
+sudo git clone https://github.com/YOUR-USERNAME/PiScout.git /opt/piscout
 ```
 
 ### Step 5. Run the installer
