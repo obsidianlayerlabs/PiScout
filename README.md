@@ -1,6 +1,6 @@
 # PiScout
 
-A pocket-sized network diagnostic tool that displays switch port information using a Raspberry Pi 3B +, a LoveRPI Isolated 3KV PoE HAT, and a Waveshare 2.71in e-Paper display (comes with 4 buttons).
+A palm-sized network diagnostic tool that displays switch port information using a Raspberry Pi 3B +, a LoveRPI Isolated 3KV PoE HAT, and a Waveshare 2.71in e-Paper display (comes with 4 buttons).
 
 Inspired by the functionality of commercial network port identification tools used by field technicians.
 
